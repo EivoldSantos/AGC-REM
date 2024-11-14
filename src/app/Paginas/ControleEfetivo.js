@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput,Image } from 'react-native';
+import { View, Text, Button, TextInput, Image, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { styles } from '../_layout';
 import { supabase } from "../services/supabase";
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 
 function Inicio() {
   const navigateToHome = () => {
@@ -16,18 +15,22 @@ function Inicio() {
 
 export default function ControleEfetivos() {
   const [Efetivo, setEfetivo] = useState("");
-  const [HorasTrabalhadas, setHorasTrabalhadas] = useState([]);
+  const [HorasTrabalhadas, setHorasTrabalhadas] = useState("");
 
   const fetchControleEfetivo = async () => {
     const { data, error } = await supabase.from("ControleEfetivos").select("*");
 
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível carregar os dados.");
     }
   };
 
   const handleAddTask = async () => {
-    if (!Efetivo) return; // Verifica se Efetivo não está vazio
+    if (!Efetivo || !HorasTrabalhadas) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios.");
+      return; // Verifica se Efetivo e Horas Trabalhadas não estão vazios
+    }
 
     const { data, error } = await supabase
       .from('ControleEfetivos')
@@ -38,10 +41,12 @@ export default function ControleEfetivos() {
 
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível adicionar o efetivo.");
     } else {
       await fetchControleEfetivo();
       setEfetivo("");
       setHorasTrabalhadas(""); 
+      Alert.alert("Sucesso", "Efetivo adicionado com sucesso!");
     }
   };
 
@@ -52,14 +57,12 @@ export default function ControleEfetivos() {
   return (
     <SafeAreaView style={styles.container}>
       <Image
-      source={require('../../../assets/images/icon.png')}
-      style={styles.image}
-      resizeMode="contain"/>
+        source={require('../../../assets/images/icon.png')}
+        style={styles.image}
+        resizeMode="contain"
+      />
       <View>
-        <Text 
-          style={styles.subtitle}>
-          Efetivos
-          </Text>
+        <Text style={styles.subtitle}>Efetivos</Text>
         <TextInput 
           style={styles.input}
           keyboardType='numeric'
@@ -67,10 +70,7 @@ export default function ControleEfetivos() {
           onChangeText={setEfetivo} 
           value={Efetivo} 
         />
-        <Text 
-          style={styles.subtitle}>
-          Horas Trabalhadas
-          </Text>
+        <Text style={styles.subtitle}>Horas Trabalhadas</Text>
         <TextInput
           style={styles.input}
           keyboardType='numeric'
@@ -87,9 +87,9 @@ export default function ControleEfetivos() {
       <View style={styles.botão}>
         <Button 
           title="Voltar"
-          onPress={Inicio()}
+          onPress = {Inicio()}
           color="#000000" 
-        />  
+        /> 
       </View>
     </SafeAreaView>
   );

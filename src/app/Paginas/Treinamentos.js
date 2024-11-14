@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, Image } from 'react-native';
+import { View, Text, Button, TextInput, Image, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { styles } from '../_layout';
 import { supabase } from "../services/supabase";
@@ -15,19 +15,23 @@ function Inicio() {
 
 export default function Treinamentos() {
   const [Descricao, setDescricao] = useState("");
-  const [Efetivo, setEfetivo] = useState([]);
-  const [Horas, setHoras] = useState([]);
+  const [Efetivo, setEfetivo] = useState("");
+  const [Horas, setHoras] = useState("");
 
   const fetchTreinamentos = async () => {
     const { data, error } = await supabase.from("Treinamentos").select("*");
 
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível carregar os treinamentos.");
     }
   };
 
   const handleAddTask = async () => {
-    if (!Descricao) return; // Verifica se Efetivo não está vazio
+    if (!Descricao || !Efetivo || !Horas) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios.");
+      return; // Verifica se Descricao, Efetivo e Horas não estão vazios
+    }
 
     const { data, error } = await supabase
       .from('Treinamentos')
@@ -38,11 +42,13 @@ export default function Treinamentos() {
 
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível adicionar o treinamento.");
     } else {
       await fetchTreinamentos();
-      setEfetivo("");
-      setHoras("")
       setDescricao(""); 
+      setEfetivo("");
+      setHoras(""); 
+      Alert.alert("Sucesso", "Treinamento adicionado com sucesso!");
     }
   };
 
@@ -53,35 +59,27 @@ export default function Treinamentos() {
   return (
     <SafeAreaView style={styles.container}>
       <Image
-      source={require('../../../assets/images/icon.png')}
-      style={styles.image}
-      resizeMode="contain"/>
+        source={require('../../../assets/images/icon.png')}
+        style={styles.image}
+        resizeMode="contain"
+      />
       <View>
-        <Text 
-          style={styles.subtitle}>
-          Descrição
-          </Text>
+        <Text style={styles.subtitle}>Descrição</Text>
         <TextInput 
           style={styles.input}
           placeholder="Insira a descrição"
           onChangeText={setDescricao} 
           value={Descricao} 
         />
-        <Text 
-          style={styles.subtitle}>
-          Quantidade
-          </Text>
+        <Text style={styles.subtitle}>Quantidade</Text>
         <TextInput
           style={styles.input}
           keyboardType='numeric'
-          placeholder="Digite as quantidade"
+          placeholder="Digite a quantidade"
           onChangeText={setEfetivo}
           value={Efetivo}
         />
-        <Text 
-          style={styles.subtitle}>
-          Horas
-          </Text>
+        <Text style={styles.subtitle}>Horas</Text>
         <TextInput
           style={styles.input}
           keyboardType='numeric'

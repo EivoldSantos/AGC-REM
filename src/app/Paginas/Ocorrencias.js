@@ -34,11 +34,13 @@ const [Quantidade, setQuantidade] = useState([]);
 
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível carregar as ocorrências.");
     }
   };
 
   const handleAddTask = async () => {
     if (!Ocorrencias) return; // Verifica se Efetivo não está vazio
+    Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios.");
 
     const { data, error } = await supabase
       .from('Ocorrencias')
@@ -46,12 +48,15 @@ const [Quantidade, setQuantidade] = useState([]);
         {Ocorrencias : Ocorrencias, Quantidade: Quantidade }, 
       ])
       .select()
+
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível adicionar a ocorrência.");
     } else {
       await fetchOcorrencias();
       setQuantidade("");
       setOcorrencias(""); 
+      Alert.alert("Sucesso", "Ocorrência adicionada com sucesso!");
     }
   };
 

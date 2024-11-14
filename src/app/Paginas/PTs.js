@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput,Image } from 'react-native';
+import { View, Text, Button, TextInput, Image, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { styles } from '../_layout';
 import { supabase } from "../services/supabase";
@@ -15,18 +15,22 @@ function Inicio() {
 
 export default function PT() {
   const [Descricao, setDescricao] = useState("");
-  const [Quantidade, setQuantidade] = useState([]);
+  const [Quantidade, setQuantidade] = useState("");
 
   const fetchPT = async () => {
     const { data, error } = await supabase.from("PT").select("*");
 
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível carregar os dados.");
     }
   };
 
   const handleAddTask = async () => {
-    if (!Descricao) return; // Verifica se Efetivo não está vazio
+    if (!Descricao || !Quantidade) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios.");
+      return; // Verifica se Descricao e Quantidade não estão vazios
+    }
 
     const { data, error } = await supabase
       .from('PT')
@@ -37,10 +41,12 @@ export default function PT() {
 
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível adicionar a tarefa.");
     } else {
       await fetchPT();
       setQuantidade("");
       setDescricao(""); 
+      Alert.alert("Sucesso", "Tarefa adicionada com sucesso!");
     }
   };
 
@@ -51,24 +57,19 @@ export default function PT() {
   return (
     <SafeAreaView style={styles.container}>
       <Image
-      source={require('../../../assets/images/icon.png')}
-      style={styles.image}
-      resizeMode="contain"/>
+        source={require('../../../assets/images/icon.png')}
+        style={styles.image}
+        resizeMode="contain"
+      />
       <View>
-        <Text 
-          style={styles.subtitle}>
-          Descrição
-          </Text>
+        <Text style={styles.subtitle}>Descrição</Text>
         <TextInput 
           style={styles.input}
           placeholder="Insira a descrição"
           onChangeText={setDescricao} 
           value={Descricao} 
         />
-        <Text 
-          style={styles.subtitle}>
-          Quantidade
-          </Text>
+        <Text style={styles.subtitle}>Quantidade</Text>
         <TextInput
           style={styles.input}
           keyboardType='numeric'
@@ -83,12 +84,13 @@ export default function PT() {
       </View>
 
       <View style={styles.botão}>
-        <Button 
+        {/* Corrigido para usar uma função anônima */}
+                <Button 
           title="Voltar"
-          onPress={Inicio()}
+          onPress = {Inicio()}
           color="#000000" 
-        />  
-      </View>
+        />
+        </View>  
     </SafeAreaView>
   );
 }

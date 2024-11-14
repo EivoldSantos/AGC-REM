@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, ActivityIndicator,Image } from 'react-native';
+import { View, Text, Button, TextInput, ActivityIndicator, Image, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { styles } from '../_layout';
 import { supabase } from "../services/supabase";
@@ -32,7 +32,7 @@ export default function SESMT() {
       // Format data for SelectList
       const formattedData = Profissionais.map(item => ({
         key: item.NomedosProfissionais.toString(), // Ensure key is a string
-        value: item.NomedosProfissionais // Use the equipment name as value
+        value: item.NomedosProfissionais // Use the professional name as value
       }));
 
       setData(formattedData); // Set formatted data to state
@@ -52,37 +52,44 @@ export default function SESMT() {
   if (error) return <Text>Error: {error}</Text>;
 
   const handleAddTask = async () => {
-    if (!Profissionais) return;
-  
+    if (!Profissionais || !Quantidade) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios.");
+      return; // Verifica se Profissionais e Quantidade não estão vazios
+    }
+
     const { data, error } = await supabase
       .from('SESMT')
       .insert([
         { Profissional: Profissionais, Quantidade: Quantidade }, 
       ])
       .select();
-  
+
     if (error) {
       console.error(error);
+      Alert.alert("Erro", "Não foi possível adicionar o profissional.");
     } else {
       await fetchProfissionais();
       setProfissionais("");
       setQuantidade(""); 
+      Alert.alert("Sucesso", "Profissional adicionado com sucesso!");
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <Image
-      source={require('../../../assets/images/icon.png')}
-      style={styles.image}
-      resizeMode="contain"/>
+        source={require('../../../assets/images/icon.png')}
+        style={styles.image}
+        resizeMode="contain"
+      />
       <View>
         <Text style={styles.subtitle}>Profissional</Text>
-        <SelectList style={styles.input}
-           placeholder='Selecione o equipamento'
-           data={data} 
-           save="value"  
-           setSelected={setProfissionais}
+        <SelectList 
+          style={styles.input}
+          placeholder='Selecione o profissional'
+          data={data} 
+          save="value"  
+          setSelected={setProfissionais}
         />
         <Text style={styles.subtitle}>Quantidade</Text>
         <TextInput
@@ -99,9 +106,9 @@ export default function SESMT() {
       </View>
 
       <View style={styles.botão}>
-        <Button 
+                <Button 
           title="Voltar"
-          onPress={Inicio()} // This should be an arrow function to avoid immediate invocation
+          onPress = {Inicio()}
           color="#000000" 
         />  
       </View>

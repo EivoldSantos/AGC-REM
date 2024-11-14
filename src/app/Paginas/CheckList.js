@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, ActivityIndicator,Image } from 'react-native';
+import { View, Text, Button, TextInput, ActivityIndicator, Image, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { styles } from '../_layout';
 import { supabase } from "../services/supabase";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SelectList } from 'react-native-dropdown-select-list'
+import { SelectList } from 'react-native-dropdown-select-list';
 
 function Inicio() {
   const navigateToHome = () => {
@@ -16,74 +16,80 @@ function Inicio() {
 
 export default function CheckList() {
   const [Equipamentos, setEquipamentos] = useState("");
-  const [Quantidade, setQuantidade] = useState([]);
+  const [Quantidade, setQuantidade] = useState("");
   const [data, setData] = useState([]); // Initialize as an empty array
   const [loading, setLoading] = useState(true); // Loading state
   const [error, setError] = useState(null); // Error state
 
+  const fetchCheckList = async () => {
+    try {
+      const { data: equipamentos, error } = await supabase
+        .from('Equipamentos') // Replace with your actual table name
+        .select('NomedosEquipamentos'); // Adjust according to your column name
 
-    const fetchCheckList = async () => {
-        try {
-            const { data: equipamentos, error } = await supabase
-                .from('Equipamentos') // Replace with your actual table name
-                .select('NomedosEquipamentos'); // Adjust according to your column name
+      if (error) throw error; // Throw error if exists
 
-            if (error) throw error; // Throw error if exists
+      // Format data for SelectList
+      const formattedData = equipamentos.map(item => ({
+        key: item.NomedosEquipamentos.toString(), // Ensure key is a string
+        value: item.NomedosEquipamentos // Use the equipment name as value
+      }));
 
-            // Format data for SelectList
-            const formattedData = equipamentos.map(item => ({
-                key: item.NomedosEquipamentos.toString(), // Ensure key is a string
-                value: item.NomedosEquipamentos // Use the equipment name as value
-            }));
+      setData(formattedData); // Set formatted data to state
+    } catch (err) {
+      console.error(err);
+      setError(err.message); // Set error message
+    } finally {
+      setLoading(false); // End loading state
+    }
+  };
 
-            setData(formattedData); // Set formatted data to state
-        } catch (err) {
-            console.error(err);
-            setError(err.message); // Set error message
-        } finally {
-            setLoading(false); // End loading state
-        }
-    };
+  useEffect(() => {
+    fetchCheckList();
+  }, []);
 
-    useEffect(() => {
-        fetchCheckList();
-    }, []);
+  if (loading) return <ActivityIndicator size="large" color="#0000ff" />;
+  if (error) return <Text>Error: {error}</Text>;
 
-    if (loading) return <ActivityIndicator size="large" color="#0000ff" />;
-    if (error) return <Text>Error: {error}</Text>;
+  const handleAddTask = async () => {
+    if (!Equipamentos || !Quantidade) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios.");
+      return; // Verifica se Equipamentos e Quantidade não estão vazios
+    }
 
-    const handleAddTask = async () => {
-      if (!Equipamentos) return;
-  
-      const { data, error } = await supabase
-        .from('CheckList')
-        .insert([
-          { Equipamentos: Equipamentos, Quantidade: Quantidade }, 
-        ])
-        .select();
-  
-      if (error) {
-        console.error(error);
-      } else {
-        await fetchCheckList();
-        setEquipamentos("");
-        setQuantidade(""); 
-      }
-    };
+    const { data, error } = await supabase
+      .from('CheckList')
+      .insert([
+        { Equipamentos: Equipamentos, Quantidade: Quantidade }, 
+      ])
+      .select();
+
+    if (error) {
+      console.error(error);
+      Alert.alert("Erro", "Não foi possível adicionar o item ao checklist.");
+    } else {
+      await fetchCheckList();
+      setEquipamentos("");
+      setQuantidade(""); 
+      Alert.alert("Sucesso", "Item adicionado ao checklist com sucesso!");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View>
-      <Image
-      source={require('../../../assets/images/icon.png')}
-      style={styles.image}
-      resizeMode="contain"/>
+        <Image
+          source={require('../../../assets/images/icon.png')}
+          style={styles.image}
+          resizeMode="contain"
+        />
         <Text style={styles.subtitle}>Equipamento</Text>
-        <SelectList style={styles.input}
-           placeholder='Selecione o equipamento'
-           data={data} 
-           save="value"  
-           setSelected={setEquipamentos}
+        <SelectList 
+          style={styles.input}
+          placeholder='Selecione o equipamento'
+          data={data} 
+          save="value"  
+          setSelected={setEquipamentos}
         />
         <Text style={styles.subtitle}>Quantidade</Text>
         <TextInput
@@ -102,7 +108,7 @@ export default function CheckList() {
       <View style={styles.botão}>
         <Button 
           title="Voltar"
-          onPress={Inicio()}
+          onPress = {Inicio()}
           color="#000000" 
         />  
       </View>

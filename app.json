@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "AGC-rem",
+    "name": "AGC-REM-RIS",
     "slug": "app-agc-rem",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "AGC-REM-RIS"
     },
     "android": {
       "adaptiveIcon": {

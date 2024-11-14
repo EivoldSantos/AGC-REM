@@ -6,20 +6,17 @@ import { MultipleSelectList, SelectList } from 'react-native-dropdown-select-lis
 import { styles } from '../_layout';
 import { supabase } from "../services/supabase";
 import { useNavigation } from '@react-navigation/native';
-import { ImagePicker } from 'expo-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 
 function Inicio() {
     const navigateToHome = () => {
-      router.replace("/");
+        router.replace("/");
     };
-  
     return navigateToHome;
 }
 
 const RiskForm = () => {
-
-    const navigation = useNavigation();
     const [envolvido, setEnvolvido] = useState('');
     const [cliente, setCliente] = useState('');
     const [contrato, setContrato] = useState('');
@@ -39,7 +36,8 @@ const RiskForm = () => {
     const [dataContrato, setDataContrato] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedImageBefore, setSelectedImageBefore] = useState(null);
+    const [selectedImageAfter, setSelectedImageAfter] = useState(null);
 
     const Disciplina = [
         { key: '1', value: 'Segurança' },
@@ -53,6 +51,7 @@ const RiskForm = () => {
         { key: '3', value: 'Trivial' },
     ];
 
+    // Lista de itens de segurança
     const safetyItems = [
         { key: '2', value: 'Mudança de posição' },
         { key: '3', value: 'Parada do trabalho' },
@@ -115,6 +114,7 @@ const RiskForm = () => {
         { key: '65', value: 'Falta de controle de agentes vetores' }
       ]; 
 
+    // Função para buscar dados
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -123,15 +123,12 @@ const RiskForm = () => {
                 supabase.from('Contrato').select('NomeContratos'),
                 supabase.from('Auditor').select('NomedoAuditor'),
             ]);
-
             if (clientes.error || contratos.error || auditores.error) {
                 throw new Error('Erro ao buscar dados');
             }
-
             setDataClientes(clientes.data.map(item => ({ key: item.NomedosClientes.toString(), value: item.NomedosClientes })));
             setDataContrato(contratos.data.map(item => ({ key: item.NomeContratos.toString(), value: item.NomeContratos })));
             setDataAuditores(auditores.data.map(item => ({ key: item.NomedoAuditor.toString(), value: item.NomedoAuditor })));
-
         } catch (err) {
             setError(err.message);
         } finally {
@@ -139,51 +136,64 @@ const RiskForm = () => {
         }
     };
 
-    const handleImagePick = async () => {
+    // Função para selecionar imagem anterior
+    const handleImagePickBefore = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
             Alert.alert("Permissão necessária", "Permissão para acessar a galeria é necessária.");
             return;
         }
-
         const pickerResult = await ImagePicker.launchImageLibraryAsync();
         if (!pickerResult.cancelled) {
-            setSelectedImage(pickerResult.uri);
+            setSelectedImageBefore(pickerResult.uri);
         }
     };
 
+    // Função para selecionar imagem posterior
+    const handleImagePickAfter = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            Alert.alert("Permissão necessária", "Permissão para acessar a galeria é necessária.");
+            return;
+        }
+        const pickerResult = await ImagePicker.launchImageLibraryAsync();
+        if (!pickerResult.cancelled) {
+            setSelectedImageAfter(pickerResult.uri);
+        }
+    };
+
+    // Função para enviar imagens
     const handleImageUpload = async () => {
-        if (!selectedImage) return;
-
-        const fileExt = selectedImage.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `images/${fileName}`;
-        
-        const { data, error } = await supabase
-            .storage
-            .from('Fotos Antes')
-            .upload(filePath, selectedImage, {
-                contentType: 'image/jpeg',
-            });
-
-        if (error) {
+        if (!selectedImageBefore || !selectedImageAfter) {
+            Alert.alert("Erro", "Selecione ambas as imagens antes de enviar.");
+            return;
+        }
+        try {
+            const uploadImage = async (imageUri, folderName, fileName) => {
+                const { data, error } = await supabase
+                    .storage
+                    .from(folderName)
+                    .upload(fileName, imageUri, { contentType: 'image/jpeg' });
+                if (error) {
+                    throw new Error(error.message);
+                }
+                return data;
+            };
+            await uploadImage(selectedImageBefore, 'Fotos Antes', `Foto_Antes_${Date.now()}.jpg`);
+            await uploadImage(selectedImageAfter, 'Fotos Depois', `Foto_Depois_${Date.now()}.jpg`);
+            Alert.alert("Sucesso", "Imagens enviadas com sucesso!");
+        } catch (error) {
             console.error("Erro ao enviar imagem:", error.message);
-            Alert.alert("Erro", "Ocorreu um erro ao enviar a imagem. Por favor, tente novamente.");
-        } else {
-            Alert.alert("Sucesso", "Imagem enviada com sucesso!");
+            Alert.alert("Erro", "Ocorreu um erro ao enviar as imagens. Por favor, tente novamente.");
         }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
+    // Função para adicionar tarefa
     const handleAddTask = async () => {
         if (!cliente || !auditor || !descricaoDesvio || !localName) {
             Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios.");
             return;
         }
-
         try {
             const { error } = await supabase
                 .from('RIS')
@@ -203,15 +213,18 @@ const RiskForm = () => {
                         Lider: lider
                     }
                 ]);
-
             if (error) throw error;
             Alert.alert("Sucesso", "Dados enviados com sucesso!");
-
         } catch (err) {
             console.error("Erro ao enviar dados:", err.message);
             Alert.alert("Erro", "Ocorreu um erro ao enviar os dados. Por favor, tente novamente.");
         }
     };
+
+    // Carregar dados ao montar o componente
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     if (loading) return <ActivityIndicator size="large" color="#0000ff" />;
     if (error) return <Text>Error: {error}</Text>;
@@ -219,123 +232,75 @@ const RiskForm = () => {
     return (
         <ScrollView style={styles.RIScontainer}>
             <Image source={require('../../../assets/images/icon.png')} style={styles.image} resizeMode="contain" />
+            
             <Text>Cliente:</Text>
-            <SelectList
-                placeholder="Selecione o cliente"
-                data={dataClientes}
-                searchPlaceholder="Pesquisar"
-                save="value"
-                setSelected={setCliente}
-                selected={cliente}
-            />
+            <SelectList placeholder="Selecione o cliente" data={dataClientes} searchPlaceholder="Pesquisar" save="value" setSelected={setCliente} selected={cliente} />
+
             <Text>Contrato:</Text>
-            <SelectList
-                placeholder="Selecione o contrato"
-                data={dataContrato}
-                searchPlaceholder="Pesquisar"
-                save="value"
-                setSelected={setContrato}
-                selected={contrato}
-            />
+            <SelectList placeholder="Selecione o contrato" data={dataContrato} searchPlaceholder="Pesquisar" save="value" setSelected={setContrato} selected={contrato} />
+
             <Text>Local:</Text>
-            <TextInput
-                value={localName}
-                onChangeText={setLocalName}
-                style={styles.input}
-            />
+            <TextInput value={localName} onChangeText={setLocalName} style={styles.input} />
+
             <Text>Auditor:</Text>
-            <SelectList
-                placeholder="Selecione o auditor"
-                data={dataAuditores}
-                searchPlaceholder="Pesquisar"
-                save="value"
-                setSelected={setAuditor}
-                selected={auditor}
-            />
+            <SelectList placeholder="Selecione o auditor" data={dataAuditores} searchPlaceholder="Pesquisar" save="value" setSelected={setAuditor} selected={auditor} />
+
             <Text>Líder:</Text>
-            <TextInput
-                value={lider}
-                onChangeText={setLider}
-                style={styles.input}
-            />
+            <TextInput value={lider} onChangeText={setLider} style={styles.input} />
+
             <Text>Disciplina:</Text>
-            <SelectList
-                placeholder="Selecione a disciplina"
-                searchPlaceholder="Pesquisar"
-                data={Disciplina}
-                save="value"
-                setSelected={setDisciplina}
-                selected={disciplina}
-            />
+            <SelectList placeholder="Selecione a disciplina" searchPlaceholder="Pesquisar" data={Disciplina} save="value" setSelected={setDisciplina} selected={disciplina} />
+
             <Text>Descrição do Desvio:</Text>
-            <TextInput
-                value={descricaoDesvio}
-                onChangeText={setDescricaoDesvio}
-                style={styles.input}
-                multiline
-                maxLength={500}
-            />
+            <TextInput value={descricaoDesvio} onChangeText={setDescricaoDesvio} style={styles.input} multiline maxLength={500} />
+
             <Text>Classificação Desvio:</Text>
-            <SelectList
-                placeholder="Selecione o tipo de desvio"
-                data={classificacaoDesvioOptions}
-                save="value"
-                setSelected={setClassificacaoDesvio}
-                selected={classificacaoDesvio}
-            />
+            <SelectList placeholder="Selecione o tipo de desvio" data={classificacaoDesvioOptions} save="value" setSelected={setClassificacaoDesvio} selected={classificacaoDesvio} />
+
             <Text>Risco:</Text>
-            <MultipleSelectList
-                placeholder="Selecione o tipo de risco"
-                searchPlaceholder="Pesquisar"
-                setSelected={setRisco}
-                data={safetyItems}
-                save="value"
-                selected={risco}
-            />
+            <MultipleSelectList placeholder="Selecione o tipo de risco" searchPlaceholder="Pesquisar" setSelected={setRisco} data={safetyItems} save="value" selected={risco} />
+
             <Text>Envolvido:</Text>
-            <TextInput
-                value={envolvido}
-                onChangeText={setEnvolvido}
-                style={styles.input}
-            />
+            <TextInput value={envolvido} onChangeText={setEnvolvido} style={styles.input} />
+
             <TouchableOpacity onPress={() => setShowPrevisto(true)}>
                 <Text style={styles.dateInput}>Prazo Previsto: {prazoPrevisto.toLocaleDateString()}</Text>
             </TouchableOpacity>
+            
             {showPrevisto && (
-                <DateTimePicker
+                <DateTimePicker 
                     value={prazoPrevisto}
                     mode="date"
                     display="default"
                     onChange={(event, date) => {
                         setShowPrevisto(false);
                         if (date) setPrazoPrevisto(date);
-                    }}
+                    }} 
                 />
             )}
+
             <TouchableOpacity onPress={() => setShowFinalizado(true)}>
                 <Text style={styles.dateInput}>Prazo Finalizado: {prazoFinalizado.toLocaleDateString()}</Text>
             </TouchableOpacity>
+
             {showFinalizado && (
-                <DateTimePicker
+                <DateTimePicker 
                     value={prazoFinalizado}
                     mode="date"
                     display="default"
                     onChange={(event, date) => {
                         setShowFinalizado(false);
                         if (date) setPrazoFinalizado(date);
-                    }}
+                    }} 
                 />
             )}
 
-            <Button title="Escolher Imagem Anterior" onPress={handleImagePick} />
-            {selectedImage && <Image source={{ uri: selectedImage }} style={{ width: 100, height: 100 }} />}
-            <Button title="Escolher Imagem Posterior" onPress={handleImagePick} />
-            {selectedImage && <Image source={{ uri: selectedImage }} style={{ width: 100, height: 100 }} />}
-            <Button title="Enviar" onPress={handleAddTask && handleImageUpload} />
-            <Button title="Voltar" onPress={Inicio()} color="#000000" />
-            <Text></Text>
-        </ScrollView>
-    );
+             <Button title="Enviar" onPress={() => { handleAddTask();}} />
+             <Button title="Voltar" onPress={Inicio()} color="#000000" />
+             
+             <Text></Text>
+         </ScrollView>
+     );
 };
 
 export default RiskForm;

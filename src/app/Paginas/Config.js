@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, Image } from 'react-native';
+import { View, Text, Button, TextInput, Image, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { styles } from '../_layout';
 import { supabase } from "../services/supabase";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView } from 'react-native-web';
+
+function Inicio() {
+  const navigateToHome = () => {
+    router.replace("/");
+  };
+
+  return navigateToHome;
+}
 
 export default function Adicionar() {
   const [Equipamentos, setEquipamentos] = useState("");
@@ -51,7 +58,7 @@ export default function Adicionar() {
   const AdicionarEquipamento = async () => {
     if (!Equipamentos) return;
     const { data, error } = await supabase
-      .from('Equipamentos')
+      .from("Equipamentos")
       .insert([{ NomedosEquipamentos: Equipamentos }])
       .select();
     if (error) {
@@ -78,7 +85,7 @@ export default function Adicionar() {
   const AdicionarProfissional = async () => {
     if (!Profissionais) return;
     const { data, error } = await supabase
-      .from('Profissionais')
+      .from("Profissionais")
       .insert([{ NomedosProfissionais: Profissionais }])
       .select();
     if (error) {
@@ -105,8 +112,8 @@ export default function Adicionar() {
   const AdicionarContrato = async () => {
     if (!Contrato) return; // Verifica se o campo não está vazio
     const { data, error } = await supabase
-      .from('Contrato') // Alterado para "Contrato"
-      .insert([{ NomedoContrato: Contrato }]) // Alterado para "NomedoContrato"
+      .from("Contrato") // Alterado para "Contrato"
+      .insert([{ NomeContratos: Contrato }]) // Alterado para "NomedoContrato"
       .select();
     if (error) {
       console.error(error);
@@ -122,8 +129,8 @@ export default function Adicionar() {
   
 
   return (
-          <ScrollView>
-    <SafeAreaView style={styles.container}>
+    <ScrollView>
+      <SafeAreaView style={styles.container}>
       <Image
         source={require('../../../assets/images/icon.png')}
         style={styles.image}
@@ -137,13 +144,13 @@ export default function Adicionar() {
           onChangeText={setContrato} 
           value={Contrato} 
         />
-        <View style={{ marginBottom: 10 }}> {/* Adicionando espaçamento abaixo do botão */}
+        <View style={{ marginBottom: 10 }}>
           <Button
             title='Adicionar Contrato'
             onPress={AdicionarContrato}
           />
         </View>
-
+    
         <Text style={styles.subtitle}>Adicione um equipamento</Text>
         <TextInput 
           style={styles.input}
@@ -151,13 +158,13 @@ export default function Adicionar() {
           onChangeText={setEquipamentos} 
           value={Equipamentos} 
         />
-        <View style={{ marginBottom: 10 }}> {/* Adicionando espaçamento abaixo do botão */}
+        <View style={{ marginBottom: 10 }}>
           <Button
             title='Adicionar Equipamento'
             onPress={AdicionarEquipamento}
           />
         </View>
-
+    
         <Text style={styles.subtitle}>Adicione um Auditor</Text>
         <TextInput
           style={styles.input}
@@ -171,7 +178,7 @@ export default function Adicionar() {
             onPress={AdicionarAuditor}
           />
         </View>
-
+    
         <Text style={styles.subtitle}>Adicione um Profissional</Text>
         <TextInput
           style={styles.input}
@@ -186,15 +193,15 @@ export default function Adicionar() {
           />
         </View>
       </View>
-
-      <View style={[styles.botão, { marginBottom: 10 }]}>
+    
+      <View style={[styles.botao, { marginBottom: 10 }]}>
         <Button 
           title="Voltar"
-          onPress={() => router.replace("/")}
+          onPress={Inicio()}
           color="#000000" 
         />  
       </View>
     </SafeAreaView>
-    </ScrollView>
-  );
+  </ScrollView>
+  )
 }

@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button, ScrollView, Image } from 'react-native';
 import { initializeApp } from '@firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from '@firebase/auth';
 import {router} from 'expo-router'
-import { styles } from './src/app/_layout';
+import { styles } from './_layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/EvilIcons';
 
